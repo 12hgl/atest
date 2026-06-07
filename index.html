@@ -1,0 +1,416 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="image/icon.ico" type="image/x-icon">
+    <title>水鱼之家-资源中心</title>
+    
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0052D9',
+                        secondary: '#666666',
+                        danger: '#E53E3E',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* ========== 全局布局：页脚贴底 ========== */
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;          /* 视口最小高度 */
+            margin: 0;
+            background-image: url('image/background.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        main {
+            flex: 1;                    /* 填充剩余空间，将页脚推到底部 */
+        }
+
+        /* 毛玻璃效果 */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover {
+            box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+            transform: translateY(-3px);
+        }
+        .search-focus:focus {
+            border-color: #0052D9;
+            box-shadow: 0 0 0 3px rgba(0,82,217,0.1);
+            outline: none;
+        }
+        .page-btn {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            border-radius: 0.375rem;
+            border: 1px solid #e5e7eb;
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(4px);
+            transition: all 0.2s;
+        }
+        .page-btn:hover { background: #0052D9; color: white; border-color: #0052D9; }
+        .page-btn.active { background: #0052D9; color: white; border-color: #0052D9; }
+        .page-btn:disabled { opacity: 0.5; pointer-events: none; }
+        #category-portal {
+            position: absolute; z-index: 9999;
+            min-width: 10rem; max-width: 16rem; max-height: 18rem;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        }
+        .btn-repo { background-color: #24292f; color: white; }
+        .btn-repo:hover { background-color: #1b1f23; }
+    </style>
+</head>
+<body>   <!-- 注意：不再需要 min-h-screen 类 -->
+
+    <div id="error-banner" class="hidden bg-yellow-100 border-b border-yellow-300 text-yellow-800 text-sm px-4 py-2 text-center"></div>
+
+    <header class="glass-effect sticky top-0 z-20 shadow-sm">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-[clamp(1.2rem,2vw,1.6rem)] font-bold text-primary flex items-center">
+                <img src="image/ziyuanicon.png" alt="图标" class="mr-3 w-6 h-6">
+                水鱼资源平台
+            </h1>
+            <div class="text-secondary text-sm">
+                <i class="fa-solid fa-circle-info text-xs mr-1"></i>资源来源于第三方
+            </div>
+        </div>
+    </header>
+
+    <section class="glass-effect py-4 shadow-sm">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row gap-3 items-stretch">
+                <div class="relative flex-1">
+                    <input type="text" id="search-input" placeholder="输入人类语言来搜索"
+                           class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none search-focus pl-9 text-sm bg-white/80 backdrop-blur-sm">
+                    <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                </div>
+                <div class="relative w-full md:w-40">
+                    <button id="category-btn"
+                            class="w-full px-3 py-2 rounded-lg border border-gray-200 flex justify-between items-center focus:outline-none search-focus text-sm bg-white/80 backdrop-blur-sm">
+                        <span id="current-category">所有</span>
+                        <i class="fa-solid fa-chevron-down text-xs text-gray-400"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <main class="container mx-auto px-4 py-8">   <!-- main 自动 flex:1 -->
+        <div class="mb-6 flex flex-wrap justify-between items-center gap-3">
+            <h2 class="text-base font-medium text-gray-800">
+                共找到 <span id="total-count" class="text-primary font-bold">0</span> 个资源
+            </h2>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 text-sm text-gray-700">
+                    <span>每页显示</span>
+                    <select id="page-size-select" class="px-2 py-1 border border-gray-200 rounded-md bg-white/70 backdrop-blur-sm text-sm">
+                        <option value="12">12</option>
+                        <option value="24" selected>24</option>
+                        <option value="48">48</option>
+                    </select>
+                </div>
+                <button id="refresh-btn" class="text-primary flex items-center text-xs hover:underline bg-white/50 px-2 py-1 rounded-full">
+                    <i class="fa-solid fa-refresh mr-1"></i> 刷新
+                </button>
+            </div>
+        </div>
+
+        <div id="project-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="col-span-full text-center py-16">
+                <i class="fa-solid fa-spinner fa-spin text-2xl text-primary mb-3"></i>
+                <p class="text-gray-700">海内存知己，天涯若比邻<br>请稍后...</p>
+            </div>
+        </div>
+
+        <div id="pagination-container" class="mt-10 flex justify-center"></div>
+    </main>
+
+    <footer class="glass-effect py-4 mt-12 shadow-sm">   <!-- mt-12 可保留，不影响贴底 -->
+        <div class="container mx-auto px-4 text-center text-secondary text-xs">
+            <p>waterfish 水鱼之家 © 2026 资源中心</p>
+            <p class="mt-1">免责声明：本站仅提供资源索引，不存储任何资源文件</p>
+        </div>
+    </footer>
+
+    <div id="category-portal" class="glass-effect rounded-lg hidden"></div>
+
+    <script>
+        (function(){
+            "use strict";
+
+            let allProjects = [];
+            let allCategories = new Set();
+            let filteredProjects = [];
+            let currentPage = 1;
+            let pageSize = 24;
+
+            const projectContainer = document.getElementById('project-container');
+            const searchInput = document.getElementById('search-input');
+            const categoryBtn = document.getElementById('category-btn');
+            const currentCategorySpan = document.getElementById('current-category');
+            const totalCountSpan = document.getElementById('total-count');
+            const refreshBtn = document.getElementById('refresh-btn');
+            const paginationContainer = document.getElementById('pagination-container');
+            const pageSizeSelect = document.getElementById('page-size-select');
+            const portal = document.getElementById('category-portal');
+            const errorBanner = document.getElementById('error-banner');
+            let portalVisible = false;
+
+            function renderLoading() {
+                projectContainer.innerHTML = `<div class="col-span-full text-center py-16"><i class="fa-solid fa-spinner fa-spin text-2xl text-primary mb-3"></i><p class="text-gray-700">海内存知己，天涯若比邻<br>请稍后...</p></div>`;
+                paginationContainer.innerHTML = '';
+                errorBanner.classList.add('hidden');
+            }
+
+            function escapeHtml(text) {
+                if (!text) return text;
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            async function loadProjectsFromIndex() {
+                try {
+                    const resp = await fetch('Files/list.json', { cache: 'reload' });
+                    if (!resp.ok) throw new Error('索引文件不存在');
+                    
+                    let idList = await resp.json();
+                    if (!Array.isArray(idList) && idList.ids) idList = idList.ids;
+                    if (!Array.isArray(idList) || idList.length === 0) throw new Error('索引ID无效');
+
+                    console.log('📋 list.json ID列表:', idList);
+
+                    const promises = idList.map(id => 
+                        fetch(`Files/${id}/data.json`, { cache: 'reload' })
+                            .then(res => {
+                                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                                return res.json();
+                            })
+                            .then(project => {
+                                project.id = id;
+                                project.onlineUrl = `Files/${id}/page/index.html`;
+                                return project;
+                            })
+                            .catch(err => {
+                                console.warn(`❌ 跳过项目 ${id}:`, err.message);
+                                return null;
+                            })
+                    );
+
+                    const results = await Promise.allSettled(promises);
+                    
+                    allProjects = [];
+                    allCategories.clear();
+                    const failedIds = [];
+
+                    results.forEach((r, index) => {
+                        if (r.status === 'fulfilled' && r.value) {
+                            allProjects.push(r.value);
+                            if (r.value.category) allCategories.add(r.value.category);
+                        } else {
+                            failedIds.push(idList[index]);
+                        }
+                    });
+                    
+                    allProjects.sort((a, b) => a.id - b.id);
+
+                    console.log('✅ 成功加载ID:', allProjects.map(p => p.id));
+                    console.log('🛠️ 有repositoryUrl的项目:', allProjects.filter(p => p.repositoryUrl).map(p => `${p.id}: ${p.repositoryUrl}`));
+                    
+                    if (failedIds.length > 0) {
+                        console.warn('⚠️ 加载失败ID:', failedIds);
+                        errorBanner.textContent = `部分资源加载失败 (ID: ${failedIds.join(', ')}) ，请检查文件是否存在及格式是否正确`;
+                        errorBanner.classList.remove('hidden');
+                    } else {
+                        errorBanner.classList.add('hidden');
+                    }
+
+                    generatePortalContent();
+                    applyFilterAndPaginate();
+                    
+                } catch (e) {
+                    console.error(e);
+                    projectContainer.innerHTML = `<div class="col-span-full text-center py-16"><i class="fa-solid fa-triangle-exclamation text-2xl text-danger mb-3"></i><p class="text-danger">唔，网络走丢了，请刷新试试</p></div>`;
+                }
+            }
+
+            function generatePortalContent() {
+                let html = '<ul class="py-1">';
+                html += '<li class="category-item px-3 py-1.5 hover:bg-primary/10 cursor-pointer text-sm" data-category="all">所有</li>';
+                Array.from(allCategories).sort().forEach(cat => {
+                    html += `<li class="category-item px-3 py-1.5 hover:bg-primary/10 cursor-pointer text-sm" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</li>`;
+                });
+                html += '</ul>';
+                portal.innerHTML = html;
+                portal.querySelectorAll('.category-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        currentCategorySpan.textContent = item.dataset.category === 'all' ? '所有' : item.dataset.category;
+                        hidePortal();
+                        applyFilterAndPaginate();
+                    });
+                });
+            }
+
+            function showPortal() {
+                const btnRect = categoryBtn.getBoundingClientRect();
+                portal.style.top = (btnRect.bottom + window.scrollY + 4) + 'px';
+                portal.style.left = (btnRect.left + window.scrollX) + 'px';
+                portal.style.width = btnRect.width + 'px';
+                portal.classList.remove('hidden');
+                portalVisible = true;
+            }
+            function hidePortal() { portal.classList.add('hidden'); portalVisible = false; }
+            function togglePortal() { portalVisible ? hidePortal() : showPortal(); }
+
+            function getFilteredProjects() {
+                const keyword = searchInput.value.trim().toLowerCase();
+                const cat = currentCategorySpan.textContent;
+                let filtered = allProjects;
+                if (cat !== '所有') filtered = filtered.filter(p => p.category === cat);
+                if (keyword) {
+                    filtered = filtered.filter(p => 
+                        (p.title||'').toLowerCase().includes(keyword) ||
+                        (p.author||'').toLowerCase().includes(keyword) ||
+                        (p.description||'').toLowerCase().includes(keyword)
+                    );
+                }
+                return filtered;
+            }
+
+            function applyFilterAndPaginate() {
+                filteredProjects = getFilteredProjects();
+                currentPage = 1;
+                renderCurrentPage();
+            }
+
+            function renderCurrentPage() {
+                const start = (currentPage - 1) * pageSize;
+                const pageItems = filteredProjects.slice(start, start + pageSize);
+                totalCountSpan.textContent = filteredProjects.length;
+
+                if (pageItems.length === 0) {
+                    projectContainer.innerHTML = `<div class="col-span-full text-center py-16"><i class="fa-solid fa-folder-open text-2xl text-secondary mb-3"></i><p class="text-gray-700">ber,你输入的是什么猎奇东西，没有！</p></div>`;
+                    paginationContainer.innerHTML = '';
+                    return;
+                }
+
+                projectContainer.innerHTML = '';
+                pageItems.forEach(p => {
+                    const repoBtn = p.repositoryUrl ? 
+                        `<a href="${escapeHtml(p.repositoryUrl)}" target="_blank" rel="noopener noreferrer" class="flex-1 btn-repo text-white py-1.5 px-2 rounded text-xs flex items-center justify-center transition"><i class="fa-brands fa-github mr-1"></i> 仓库</a>` 
+                        : '';
+
+                    const card = `
+                        <div class="glass-effect rounded-lg card-hover overflow-hidden shadow-md flex flex-col h-full">
+                            <div class="px-4 py-3 border-b border-white/20">
+                                <div class="flex justify-between items-start">
+                                    <h3 class="text-base font-semibold text-gray-800 line-clamp-1">${escapeHtml(p.title) || '无名氏'}</h3>
+                                    <span class="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full whitespace-nowrap ml-2">${escapeHtml(p.category) || '无分类'}</span>
+                                </div>
+                                <p class="text-xs text-gray-600 mt-1"><i class="fa-solid fa-user mr-1"></i>作者：${escapeHtml(p.author) || '神秘的人'}</p>
+                            </div>
+                            <div class="px-4 py-3 flex-1 flex flex-col">
+                                <p class="text-xs text-gray-600 mb-3 line-clamp-2"><i class="fa-solid fa-file-alt mr-1"></i>描述：${escapeHtml(p.description) || '没有简介！！！'}</p>
+                                <div class="flex gap-2 mt-auto">
+                                    ${repoBtn}
+                                    <a href="${escapeHtml(p.onlineUrl)}" target="_blank" class="flex-1 bg-primary text-white py-1.5 px-2 rounded text-xs flex items-center justify-center hover:bg-primary/90 transition"><i class="fa-solid fa-eye mr-1"></i>在线查看</a>
+                                    <a href="${escapeHtml(p.mainDownloadUrl) || '#'}" target="_blank" class="flex-1 bg-gray-800 text-white py-1.5 px-2 rounded text-xs flex items-center justify-center hover:bg-gray-700 transition"><i class="fa-solid fa-download mr-1"></i>主下载</a>
+                                    ${p.backupDownloadUrl ? `<a href="${escapeHtml(p.backupDownloadUrl)}" target="_blank" class="flex-1 bg-gray-200 text-gray-800 py-1.5 px-2 rounded text-xs flex items-center justify-center hover:bg-gray-300 transition"><i class="fa-solid fa-cloud-download-alt mr-1"></i>备用下载</a>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    projectContainer.insertAdjacentHTML('beforeend', card);
+                });
+
+                renderPagination();
+            }
+
+            function renderPagination() {
+                const total = Math.ceil(filteredProjects.length / pageSize);
+                if (total <= 1) { paginationContainer.innerHTML = ''; return; }
+
+                const maxVisible = 5;
+                let start = Math.max(1, currentPage - Math.floor(maxVisible/2));
+                let end = Math.min(total, start + maxVisible - 1);
+                if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1);
+
+                let html = '<div class="flex items-center gap-1">';
+                html += `<button class="page-btn" data-page="prev" ${currentPage === 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-left"></i></button>`;
+                if (start > 1) {
+                    html += `<button class="page-btn" data-page="1">1</button>`;
+                    if (start > 2) html += `<span class="px-1 text-gray-600">...</span>`;
+                }
+                for (let i = start; i <= end; i++) {
+                    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                }
+                if (end < total) {
+                    if (end < total - 1) html += `<span class="px-1 text-gray-600">...</span>`;
+                    html += `<button class="page-btn" data-page="${total}">${total}</button>`;
+                }
+                html += `<button class="page-btn" data-page="next" ${currentPage === total ? 'disabled' : ''}><i class="fa-solid fa-chevron-right"></i></button>`;
+                html += '</div>';
+                paginationContainer.innerHTML = html;
+
+                paginationContainer.querySelectorAll('button[data-page]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const page = btn.dataset.page;
+                        if (page === 'prev') { if (currentPage > 1) currentPage--; }
+                        else if (page === 'next') { if (currentPage < total) currentPage++; }
+                        else currentPage = parseInt(page);
+                        renderCurrentPage();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    });
+                });
+            }
+
+            function bindEvents() {
+                searchInput.addEventListener('input', applyFilterAndPaginate);
+                categoryBtn.addEventListener('click', (e) => { e.stopPropagation(); togglePortal(); });
+                document.addEventListener('click', (e) => {
+                    if (!categoryBtn.contains(e.target) && !portal.contains(e.target)) hidePortal();
+                });
+                document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && portalVisible) hidePortal(); });
+                window.addEventListener('resize', () => { if (portalVisible) showPortal(); });
+                window.addEventListener('scroll', () => { if (portalVisible) showPortal(); }, true);
+                pageSizeSelect.addEventListener('change', e => {
+                    pageSize = parseInt(e.target.value);
+                    applyFilterAndPaginate();
+                });
+                refreshBtn.addEventListener('click', async () => {
+                    renderLoading();
+                    await loadProjectsFromIndex();
+                });
+            }
+
+            async function init() {
+                renderLoading();
+                bindEvents();
+                await loadProjectsFromIndex();
+            }
+            window.addEventListener('DOMContentLoaded', init);
+        })();
+    </script>
+
+<script async id="netlify-rum-container" src="/.netlify/scripts/rum" data-netlify-rum-site-id="14a17e8e-b14c-4cd0-8c76-dacefc7c48ce" data-netlify-deploy-branch="" data-netlify-deploy-context="production" data-netlify-cwv-token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaXRlX2lkIjoiMTRhMTdlOGUtYjE0Yy00Y2QwLThjNzYtZGFjZWZjN2M0OGNlIiwiYWNjb3VudF9pZCI6IjY5YjY0NWFhNWQ3MDRiNzVlMmM1NTc0NCIsImRlcGxveV9pZCI6IjZhMDkzN2Y0N2I2Yjk3NGQwYzE4MzgwNSIsImlzc3VlciI6Im5mc2VydmVyIn0.hWDhZUprM5zyo_77lIc9N5JSON_s5vIAnHurSd3nDGk"></script></body>
+</html>
